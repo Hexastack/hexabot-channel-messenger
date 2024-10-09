@@ -236,7 +236,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting - Greeting text setting.
    */
-  @OnEvent('hook:messenger_settings:greeting_text')
+  @OnEvent('hook:messenger:greeting_text')
   async onGreetingTextUpdate(setting: TextSetting): Promise<void> {
     try {
       await this._setGreetingText(setting.value);
@@ -257,7 +257,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting
    */
-  @OnEvent('hook:messenger_settings:get_started_button')
+  @OnEvent('hook:messenger:get_started_button')
   async onToggleGetStartedButton(setting: Setting): Promise<void> {
     try {
       if (setting.value) {
@@ -286,7 +286,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting - Access token setting.
    */
-  @OnEvent('hook:messenger_settings:access_token')
+  @OnEvent('hook:messenger:access_token')
   async onAccessTokenUpdate(setting: Setting): Promise<void> {
     this.api = new GraphApi(this.httpService, setting.value);
   }
@@ -296,7 +296,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting
    */
-  @OnEvent('hook:messenger_settings:composer_input_disabled')
+  @OnEvent('hook:messenger:composer_input_disabled')
   async onToggleComposerInput(setting: CheckboxSetting): Promise<void> {
     try {
       await this._setPersistentMenu(setting.value);
