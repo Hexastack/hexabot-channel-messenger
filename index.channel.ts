@@ -22,7 +22,7 @@ import EventWrapper from '@/channel/lib/EventWrapper';
 import ChannelHandler from '@/channel/lib/Handler';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
-import { Label } from '@/chat/schemas/label.schema';
+import { Label, LabelDocument } from '@/chat/schemas/label.schema';
 import { Subscriber } from '@/chat/schemas/subscriber.schema';
 import { WithUrl } from '@/chat/schemas/types/attachment';
 import { Button, ButtonType } from '@/chat/schemas/types/button';
@@ -112,7 +112,7 @@ export default class MessengerHandler extends ChannelHandler {
    */
   @OnEvent('hook:label:create')
   async onLabelCreate(
-    label: Label,
+    label: LabelDocument,
     callback: (result: Record<string, string>) => Promise<void>,
   ): Promise<void> {
     try {
@@ -170,7 +170,7 @@ export default class MessengerHandler extends ChannelHandler {
    * @param updates - The updates to apply to the subscriber.
    * @returns A promise that resolves when the update handling is complete.
    */
-  @OnEvent('hook:chatbot:subscriber:update:before')
+  @OnEvent('hook:subscriber:preUpdate')
   async handleSubscriberUpdate(
     criteria: string | TFilterQuery<Subscriber>,
     updates: Partial<Omit<Subscriber, keyof BaseSchema>>,
@@ -236,7 +236,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting - Greeting text setting.
    */
-  @OnEvent('hook:settings:messenger:greeting_text')
+  @OnEvent('hook:messenger:greeting_text')
   async onGreetingTextUpdate(setting: TextSetting): Promise<void> {
     try {
       await this._setGreetingText(setting.value);
@@ -257,7 +257,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting
    */
-  @OnEvent('hook:settings:messenger:get_started_button')
+  @OnEvent('hook:messenger:get_started_button')
   async onToggleGetStartedButton(setting: Setting): Promise<void> {
     try {
       if (setting.value) {
@@ -286,7 +286,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting - Access token setting.
    */
-  @OnEvent('hook:settings:messenger:access_token')
+  @OnEvent('hook:messenger:access_token')
   async onAccessTokenUpdate(setting: Setting): Promise<void> {
     this.api = new GraphApi(this.httpService, setting.value);
   }
@@ -296,7 +296,7 @@ export default class MessengerHandler extends ChannelHandler {
    *
    * @param setting
    */
-  @OnEvent('hook:settings:messenger:composer_input_disabled')
+  @OnEvent('hook:messenger:composer_input_disabled')
   async onToggleComposerInput(setting: CheckboxSetting): Promise<void> {
     try {
       await this._setPersistentMenu(setting.value);
@@ -495,7 +495,7 @@ export default class MessengerHandler extends ChannelHandler {
               const event = new MessengerEventWrapper(handler, e);
               const type: StdEventType = event.getEventType();
               if (type) {
-                this.eventEmitter.emit('hook:chatbot:' + type, event);
+                this.eventEmitter.emit(`hook:chatbot:${type}`, event);
               } else {
                 this.logger.error(
                   'Messenger Channel Handler : Webhook received unknown event ',
