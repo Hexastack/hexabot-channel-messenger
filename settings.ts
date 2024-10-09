@@ -11,7 +11,7 @@ import { SettingType } from '@/setting/schemas/types';
 
 import { Messenger } from './types';
 
-export const MESSENGER_CHANNEL_NAME = 'messenger';
+export const MESSENGER_CHANNEL_NAME = 'messenger_settings';
 
 export const DEFAULT_MESSENGER_SETTINGS: SettingCreateDto[] = [
   {
