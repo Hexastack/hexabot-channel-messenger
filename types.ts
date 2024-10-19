@@ -6,7 +6,7 @@
  * 2. All derivative works must include clear attribution to the original creator and software, Hexastack and Hexabot, in a prominent location (e.g., in the software's "About" section, documentation, and README file).
  */
 
-import { WebUrlButton, Button } from '@/chat/schemas/types/button';
+import { Button, WebUrlButton } from '@/chat/schemas/types/button';
 import { StdQuickReply } from '@/chat/schemas/types/quick-reply';
 
 export namespace Messenger {
@@ -21,8 +21,6 @@ export namespace Messenger {
     app_id = 'app_id',
     user_fields = 'user_fields',
   }
-
-  export type Settings = Record<SettingLabel, any>;
 
   export enum AttachmentType {
     audio = 'audio',
