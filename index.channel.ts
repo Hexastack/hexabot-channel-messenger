@@ -47,9 +47,8 @@ import { I18nService } from '@/i18n/services/i18n.service';
 import { LanguageService } from '@/i18n/services/language.service';
 import { LoggerService } from '@/logger/logger.service';
 import { NlpService } from '@/nlp/services/nlp.service';
-import { SettingCreateDto } from '@/setting/dto/setting.dto';
 import { Setting } from '@/setting/schemas/setting.schema';
-import { CheckboxSetting, TextSetting } from '@/setting/schemas/types';
+import { CheckboxSetting, TextareaSetting } from '@/setting/schemas/types';
 import { SettingService } from '@/setting/services/setting.service';
 import { BaseSchema } from '@/utils/generics/base-schema';
 
@@ -59,10 +58,10 @@ import { Messenger } from './types';
 import MessengerEventWrapper from './wrapper';
 
 @Injectable()
-export default class MessengerHandler extends ChannelHandler {
+export default class MessengerHandler extends ChannelHandler<
+  typeof MESSENGER_CHANNEL_NAME
+> {
   protected api: GraphApi;
-
-  protected settings: SettingCreateDto[] = DEFAULT_MESSENGER_SETTINGS;
 
   constructor(
     settingService: SettingService,
@@ -79,16 +78,14 @@ export default class MessengerHandler extends ChannelHandler {
     protected readonly labelService: LabelService,
     protected readonly httpService: HttpService,
   ) {
-    super(settingService, channelService, nlpService, logger);
-  }
-
-  /**
-   * Returns the channel's name.
-   *
-   * @returns The channel's name.
-   */
-  getChannel() {
-    return MESSENGER_CHANNEL_NAME;
+    super(
+      MESSENGER_CHANNEL_NAME,
+      DEFAULT_MESSENGER_SETTINGS,
+      settingService,
+      channelService,
+      nlpService,
+      logger,
+    );
   }
 
   /**
@@ -97,7 +94,7 @@ export default class MessengerHandler extends ChannelHandler {
   async init(): Promise<void> {
     this.logger.debug('Messenger Channel Handler : initialization ...');
 
-    const settings = await this.getSettings<Messenger.Settings>();
+    const settings = await this.getSettings();
     this.api = new GraphApi(
       this.httpService,
       settings ? settings.access_token : '',
@@ -237,7 +234,7 @@ export default class MessengerHandler extends ChannelHandler {
    * @param setting - Greeting text setting.
    */
   @OnEvent('hook:messenger:greeting_text')
-  async onGreetingTextUpdate(setting: TextSetting): Promise<void> {
+  async onGreetingTextUpdate(setting: TextareaSetting): Promise<void> {
     try {
       await this._setGreetingText(setting.value);
       this.logger.log(
@@ -258,7 +255,7 @@ export default class MessengerHandler extends ChannelHandler {
    * @param setting
    */
   @OnEvent('hook:messenger:get_started_button')
-  async onToggleGetStartedButton(setting: Setting): Promise<void> {
+  async onToggleGetStartedButton(setting: CheckboxSetting): Promise<void> {
     try {
       if (setting.value) {
         await this._setGetStartedButton();
@@ -348,7 +345,7 @@ export default class MessengerHandler extends ChannelHandler {
       return next();
     }
 
-    const settings = await this.getSettings<Messenger.Settings>();
+    const settings = await this.getSettings();
     const expectedHash = crypto
       .createHmac('sha1', settings.app_secret)
       .update(req.rawBody)
@@ -425,7 +422,7 @@ export default class MessengerHandler extends ChannelHandler {
    */
   async subscribe(req: Request, res: Response) {
     const data: any = req.query;
-    const settings = await this.getSettings<Messenger.Settings>();
+    const settings = await this.getSettings();
     const verifyToken: string = settings.verify_token;
 
     if (!verifyToken) {
@@ -912,7 +909,7 @@ export default class MessengerHandler extends ChannelHandler {
     const handler = this;
     const defaultUserFields =
       'first_name,last_name,profile_pic,locale,timezone,gender';
-    const settings = await this.getSettings<Messenger.Settings>();
+    const settings = await this.getSettings();
     const userFields = settings.user_fields || defaultUserFields;
     const profile = await handler.api.profile.getUserProfile(
       event.getSenderForeignId(),
@@ -1085,7 +1082,7 @@ export default class MessengerHandler extends ChannelHandler {
       if (menu.length === 0) {
         return await handler._deletePersistentMenu();
       } else {
-        const settings = await this.getSettings<Messenger.Settings>();
+        const settings = await this.getSettings();
         // Update the menu
         composer_input_disabled =
           typeof composer_input_disabled !== 'undefined'

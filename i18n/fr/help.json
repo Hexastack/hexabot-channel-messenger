@@ -1,0 +1,6 @@
+{
+  "verify_token": "Token que vous renverra Facebook dans le cadre de la vérification de l’URL de rappel.",
+  "composer_input_disabled": "Cela signifie que votre robot ne peut interagir qu'avec le menu persistant, les valeurs de retours, les boutons et les Webviews.",
+  "get_started_button": "L'écran de bienvenue d'un chatbot peut afficher un bouton `Démarrer`. Lorsque ce bouton est appuyé, la plate-forme Messenger envoie un événement à votre webhook (Payload = `Démarrer`).",
+  "greeting_text": "Le texte de bienvenue de votre chatbot vous permet de spécifier le message d'accueil que les utilisateurs verront sur l'écran d'accueil de votre chatbot. L'écran de bienvenue s'affiche pour les personnes qui interagissent avec votre chatbot pour la première fois."
+}

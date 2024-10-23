@@ -1,0 +1,9 @@
+{
+  "app_secret": "Clé secrète Facebook",
+  "access_token": "Jeton d’accès de la Page Facebook",
+  "verify_token": "Jeton de Verification de l'URL de rappel",
+  "get_started_button": "Activer le bouton `Démarrer`",
+  "composer_input_disabled": "Désactiver la saisie du compositeur",
+  "greeting_text": "Texte de bienvenue",
+  "user_fields": "Champs utilisateur à récupérer (séparé par des virgules)"
+}

@@ -1,0 +1,9 @@
+{
+  "app_secret": "Facebook App Secret",
+  "access_token": "Facebook Page Access Token",
+  "verify_token": "Webhook Verification Token",
+  "get_started_button": "Enable `Get Started` button",
+  "composer_input_disabled": "Disable composer input",
+  "greeting_text": "Greeting Text",
+  "user_fields": "User fields to be retrieved (comma separated)"
+}

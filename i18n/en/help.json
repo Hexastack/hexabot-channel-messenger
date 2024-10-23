@@ -1,0 +1,6 @@
+{
+  "verify_token": "Token that you will returned to Facebook as part of the verification of the Webhook URL.",
+  "composer_input_disabled": "This means your bot can only be interacted with via the persistent menu, postbacks, buttons, and webviews.",
+  "get_started_button": "A bot's welcome screen can display a Get Started button. When this button is tapped, the Messenger Platform will send a postback event to your webhook (Payload = `GET_STARTED`).",
+  "greeting_text": "The greeting property of your bot's Messenger profile allows you to specify the greeting message people will see on the welcome screen of your bot. The welcome screen is displayed for people interacting with your bot for the first time."
+}
