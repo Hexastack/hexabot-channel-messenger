@@ -46,7 +46,6 @@ import { MenuService } from '@/cms/services/menu.service';
 import { I18nService } from '@/i18n/services/i18n.service';
 import { LanguageService } from '@/i18n/services/language.service';
 import { LoggerService } from '@/logger/logger.service';
-import { NlpService } from '@/nlp/services/nlp.service';
 import { Setting } from '@/setting/schemas/setting.schema';
 import { CheckboxSetting, TextareaSetting } from '@/setting/schemas/types';
 import { SettingService } from '@/setting/services/setting.service';
@@ -67,7 +66,6 @@ export default class MessengerHandler extends ChannelHandler<
   constructor(
     settingService: SettingService,
     channelService: ChannelService,
-    nlpService: NlpService,
     logger: LoggerService,
     protected readonly eventEmitter: EventEmitter2,
     protected readonly i18n: I18nService,
