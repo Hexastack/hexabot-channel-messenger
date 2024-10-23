@@ -1,4 +1,4 @@
-import { DEFAULT_MESSENGER_SETTINGS, MESSENGER_GROUP_NAME } from './settings';
+import DEFAULT_MESSENGER_SETTINGS, { MESSENGER_GROUP_NAME } from './settings';
 
 declare global {
   interface Settings extends SettingTree<typeof DEFAULT_MESSENGER_SETTINGS> {}

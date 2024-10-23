@@ -49,6 +49,7 @@ import {
   rootMongooseTestModule,
 } from '@/utils/test/test';
 
+import MessengerHandler from '../index.channel';
 import {
   messengerAttachment,
   messengerButtons,
@@ -57,7 +58,6 @@ import {
   messengerQuickReplies,
   messengerText,
 } from './data.mock';
-import MessengerHandler from '../index.channel';
 
 describe('Messenger Handler', () => {
   let handler: MessengerHandler;
@@ -143,7 +143,7 @@ describe('Messenger Handler', () => {
 
   it('should have correct name', () => {
     expect(handler).toBeDefined();
-    expect(handler.getChannel()).toEqual('messenger');
+    expect(handler.getName()).toEqual('messenger-channel');
   });
 
   it('should format text properly', () => {
