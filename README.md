@@ -31,11 +31,9 @@ Before you begin, ensure you have the following:
 ## Installation
 First, navigate to your Hexabot project directory and make sure the dependencies are installed:
 ```sh
-cd ~/projects/Hexabot/api
+cd ~/projects/Hexabot/
 
-npm install --save hexabot-channel-messenger
-
-cd ../
+npm install --save hexabot-channel-messenger --prefix ./api
 
 npx hexabot dev
 ```
