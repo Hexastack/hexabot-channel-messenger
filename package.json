@@ -1,6 +1,6 @@
 {
   "name": "hexabot-channel-messenger",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Facebook/Messenger Channel for Hexabot Chatbot Builder",
   "dependencies": {},
   "author": "Hexastack",

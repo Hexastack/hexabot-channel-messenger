@@ -11,11 +11,11 @@ import { SettingType } from '@/setting/schemas/types';
 
 import { Messenger } from './types';
 
-export const MESSENGER_CHANNEL_NAME = 'messenger';
+export const MESSENGER_CHANNEL_NAME = 'messenger-channel';
 
-export const MESSENGER_GROUP_NAME = 'messenger';
+export const MESSENGER_GROUP_NAME = 'messenger_channel';
 
-export const DEFAULT_MESSENGER_SETTINGS = [
+export default [
   {
     group: MESSENGER_GROUP_NAME,
     label: Messenger.SettingLabel.app_secret,

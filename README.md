@@ -31,13 +31,13 @@ Before you begin, ensure you have the following:
 ## Installation
 First, navigate to your Hexabot project directory and make sure the dependencies are installed:
 ```sh
-cd ~/projects/Hexabot
-npm install
-```
+cd ~/projects/Hexabot/api
 
-Run the following command which will download and install the Facebook / Messenger channel:
-```sh
-npx hexabot install channel Hexastack/hexabot-channel-messenger
+npm install --save hexabot-channel-messenger
+
+cd ../
+
+npx hexabot dev
 ```
 
 ---

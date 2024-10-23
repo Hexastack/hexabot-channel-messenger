@@ -84,14 +84,6 @@ export default class MessengerEventWrapper extends EventWrapper<
    */
   constructor(handler: MessengerHandler, event: Messenger.Event) {
     super(handler, event);
-    // In case Wit.ai is configured as provider, nlp is already defined
-    if ('message' in this._adapter.raw) {
-      const rawData = this._adapter.raw;
-      // @TODO : remove
-      if (typeof handler.getNLP() !== 'undefined' && rawData.message.nlp) {
-        this._nlp = handler.getNLP().bestGuess(rawData.message.nlp, true);
-      }
-    }
   }
 
   /**

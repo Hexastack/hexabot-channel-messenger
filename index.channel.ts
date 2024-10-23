@@ -46,14 +46,14 @@ import { MenuService } from '@/cms/services/menu.service';
 import { I18nService } from '@/i18n/services/i18n.service';
 import { LanguageService } from '@/i18n/services/language.service';
 import { LoggerService } from '@/logger/logger.service';
-import { NlpService } from '@/nlp/services/nlp.service';
 import { Setting } from '@/setting/schemas/setting.schema';
 import { CheckboxSetting, TextareaSetting } from '@/setting/schemas/types';
 import { SettingService } from '@/setting/services/setting.service';
 import { BaseSchema } from '@/utils/generics/base-schema';
 
+import { ChannelName } from '@/channel/types';
 import { GraphApi } from './lib/graph-api';
-import { DEFAULT_MESSENGER_SETTINGS, MESSENGER_CHANNEL_NAME } from './settings';
+import { MESSENGER_CHANNEL_NAME } from './settings';
 import { Messenger } from './types';
 import MessengerEventWrapper from './wrapper';
 
@@ -66,7 +66,6 @@ export default class MessengerHandler extends ChannelHandler<
   constructor(
     settingService: SettingService,
     channelService: ChannelService,
-    nlpService: NlpService,
     logger: LoggerService,
     protected readonly eventEmitter: EventEmitter2,
     protected readonly i18n: I18nService,
@@ -78,14 +77,11 @@ export default class MessengerHandler extends ChannelHandler<
     protected readonly labelService: LabelService,
     protected readonly httpService: HttpService,
   ) {
-    super(
-      MESSENGER_CHANNEL_NAME,
-      DEFAULT_MESSENGER_SETTINGS,
-      settingService,
-      channelService,
-      nlpService,
-      logger,
-    );
+    super(MESSENGER_CHANNEL_NAME, settingService, channelService, logger);
+  }
+
+  getPath(): string {
+    return __dirname;
   }
 
   /**
@@ -115,7 +111,7 @@ export default class MessengerHandler extends ChannelHandler<
     try {
       const { id } = await this.api.customLabels.createCustomLabel(label.name);
       await callback({
-        [this.getChannel()]: id,
+        [this.getName()]: id,
       });
       this.logger.debug(
         'Messenger Channel Handler : Successfully synced label',
@@ -139,11 +135,11 @@ export default class MessengerHandler extends ChannelHandler<
       await Promise.all(
         labels
           .filter((label) => {
-            return this.getChannel() in label.label_id;
+            return this.getName() in label.label_id;
           })
           .map((label) => {
             return this.api.customLabels.deleteCustomLabel(
-              label.label_id[this.getChannel()],
+              label.label_id[this.getName()],
             );
           }),
       );
@@ -167,6 +163,7 @@ export default class MessengerHandler extends ChannelHandler<
    * @param updates - The updates to apply to the subscriber.
    * @returns A promise that resolves when the update handling is complete.
    */
+  // @ts-expect-error todo
   @OnEvent('hook:subscriber:preUpdate')
   async handleSubscriberUpdate(
     criteria: string | TFilterQuery<Subscriber>,
@@ -190,7 +187,7 @@ export default class MessengerHandler extends ChannelHandler<
           _id: { $in: updates.labels },
         });
 
-        const channel = this.getChannel();
+        const channel = this.getName();
 
         const difference = (a: string[], b: string[]) =>
           a.filter((x: string) => !b.includes(x));
@@ -233,7 +230,7 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @param setting - Greeting text setting.
    */
-  @OnEvent('hook:messenger:greeting_text')
+  @OnEvent('hook:messenger_channel:greeting_text')
   async onGreetingTextUpdate(setting: TextareaSetting): Promise<void> {
     try {
       await this._setGreetingText(setting.value);
@@ -254,7 +251,7 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @param setting
    */
-  @OnEvent('hook:messenger:get_started_button')
+  @OnEvent('hook:messenger_channel:get_started_button')
   async onToggleGetStartedButton(setting: CheckboxSetting): Promise<void> {
     try {
       if (setting.value) {
@@ -283,7 +280,7 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @param setting - Access token setting.
    */
-  @OnEvent('hook:messenger:access_token')
+  @OnEvent('hook:messenger_channel:access_token')
   async onAccessTokenUpdate(setting: Setting): Promise<void> {
     this.api = new GraphApi(this.httpService, setting.value);
   }
@@ -293,7 +290,7 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @param setting
    */
-  @OnEvent('hook:messenger:composer_input_disabled')
+  @OnEvent('hook:messenger_channel:composer_input_disabled')
   async onToggleComposerInput(setting: CheckboxSetting): Promise<void> {
     try {
       await this._setPersistentMenu(setting.value);
@@ -939,7 +936,7 @@ export default class MessengerHandler extends ChannelHandler<
       last_name: profile.last_name,
       gender: profile.gender,
       channel: {
-        name: handler.getChannel(),
+        name: handler.getName() as ChannelName,
       },
       assignedAt: null,
       assignedTo: null,
