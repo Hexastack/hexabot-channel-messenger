@@ -2,7 +2,7 @@
 
 Welcome to the [Hexabot](https://hexabot.ai/) Facebook/Messenger Channel Extension! This extension enables seamless integration of your Hexabot chatbot with Facebook Messenger, allowing you to engage with your audience directly on one of the world's most popular messaging platforms.
 
-[Hexabot](https://hexabot.ai/) is an open-source chatbot / agent solution that allows users to create and manage AI-powered, multi-channel, and multilingual chatbots with ease. If you would like to learn more, please visit the [official github repo](https://github.com/Hexastack/Hexabot/).
+Not yet familiar with [Hexabot](https://hexabot.ai/)? it's a open-source chatbot / agent solution that allows users to create and manage AI-powered, multi-channel, and multilingual chatbots with ease. If you would like to learn more, please visit the [official github repo](https://github.com/Hexastack/Hexabot/).
 
 ## Features
 
@@ -31,11 +31,11 @@ Before you begin, ensure you have the following:
 ## Installation
 First, navigate to your Hexabot project directory and make sure the dependencies are installed:
 ```sh
-cd ~/projects/Hexabot/
+cd ~/projects/my-chatbot/
 
-npm install --save hexabot-channel-messenger --prefix ./api
+npm install --save hexabot-channel-messenger
 
-npx hexabot dev
+hexabot dev
 ```
 
 ---
