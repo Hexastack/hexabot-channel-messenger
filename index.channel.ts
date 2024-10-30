@@ -12,7 +12,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { NextFunction, Request, Response } from 'express';
-import { TFilterQuery } from 'mongoose';
+import { TFilterQuery } from '@/utils/types/filter.types';
 import fetch from 'node-fetch';
 
 import { Attachment } from '@/attachment/schemas/attachment.schema';
@@ -163,7 +163,6 @@ export default class MessengerHandler extends ChannelHandler<
    * @param updates - The updates to apply to the subscriber.
    * @returns A promise that resolves when the update handling is complete.
    */
-  // @ts-expect-error todo
   @OnEvent('hook:subscriber:preUpdate')
   async handleSubscriberUpdate(
     criteria: string | TFilterQuery<Subscriber>,
