@@ -27,6 +27,7 @@ import { Subscriber } from '@/chat/schemas/subscriber.schema';
 import { WithUrl } from '@/chat/schemas/types/attachment';
 import { Button, ButtonType } from '@/chat/schemas/types/button';
 import {
+  ContentElement,
   OutgoingMessageFormat,
   StdEventType,
   StdOutgoingAttachmentMessage,
@@ -600,8 +601,8 @@ export default class MessengerHandler extends ChannelHandler<
    * @returns A Messenger elements object
    */
   _formatElements(
-    data: any[],
-    options: BlockOptions,
+    data: ContentElement[],
+    options: BlockOptions
   ): Messenger.MessageElement[] {
     if (!options.content || !options.content.fields) {
       throw new Error('Content options are missing the fields');
