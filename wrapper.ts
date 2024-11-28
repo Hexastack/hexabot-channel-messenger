@@ -14,10 +14,11 @@ import {
 } from '@/chat/schemas/types/attachment';
 import {
   IncomingMessageType,
+  PayloadType,
   StdEventType,
   StdIncomingMessage,
 } from '@/chat/schemas/types/message';
-import { Payload, PayloadType } from '@/chat/schemas/types/quick-reply';
+import { Payload } from '@/chat/schemas/types/quick-reply';
 
 import MessengerHandler from './index.channel';
 import { Messenger } from './types';

@@ -12,7 +12,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { NextFunction, Request, Response } from 'express';
-import { TFilterQuery } from '@/utils/types/filter.types';
 import fetch from 'node-fetch';
 
 import { Attachment } from '@/attachment/schemas/attachment.schema';
@@ -20,6 +19,7 @@ import { AttachmentService } from '@/attachment/services/attachment.service';
 import { ChannelService } from '@/channel/channel.service';
 import EventWrapper from '@/channel/lib/EventWrapper';
 import ChannelHandler from '@/channel/lib/Handler';
+import { ChannelName } from '@/channel/types';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
 import { Label, LabelDocument } from '@/chat/schemas/label.schema';
@@ -51,8 +51,8 @@ import { Setting } from '@/setting/schemas/setting.schema';
 import { CheckboxSetting, TextareaSetting } from '@/setting/schemas/types';
 import { SettingService } from '@/setting/services/setting.service';
 import { BaseSchema } from '@/utils/generics/base-schema';
+import { TFilterQuery } from '@/utils/types/filter.types';
 
-import { ChannelName } from '@/channel/types';
 import { GraphApi } from './lib/graph-api';
 import { MESSENGER_CHANNEL_NAME } from './settings';
 import { Messenger } from './types';
@@ -602,7 +602,7 @@ export default class MessengerHandler extends ChannelHandler<
    */
   _formatElements(
     data: ContentElement[],
-    options: BlockOptions
+    options: BlockOptions,
   ): Messenger.MessageElement[] {
     if (!options.content || !options.content.fields) {
       throw new Error('Content options are missing the fields');
