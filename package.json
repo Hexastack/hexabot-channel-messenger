@@ -3,7 +3,10 @@
   "version": "2.0.10",
   "description": "Facebook/Messenger Channel Extension for Hexabot Chatbot Builder",
   "scripts": {
-    "release": "npm version patch && git push origin --tags && npm publish"
+    "release:common": "git push origin --tags && npm publish",
+    "release:patch": "npm version patch && npm run release:common",
+    "release:minor": "npm version minor && npm run release:common",
+    "release": "echo 'Please specify patch or minor: npm run release:patch or npm run release:minor'"
   },
   "dependencies": {},
   "author": "Hexastack",
