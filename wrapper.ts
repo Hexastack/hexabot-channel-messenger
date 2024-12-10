@@ -21,6 +21,7 @@ import {
 import { Payload } from '@/chat/schemas/types/quick-reply';
 
 import MessengerHandler from './index.channel';
+import { MESSENGER_CHANNEL_NAME } from './settings';
 import { Messenger } from './types';
 
 type MessengerEventAdapter =
@@ -75,7 +76,8 @@ type MessengerEventAdapter =
 
 export default class MessengerEventWrapper extends EventWrapper<
   MessengerEventAdapter,
-  Messenger.Event
+  Messenger.Event,
+  typeof MESSENGER_CHANNEL_NAME
 > {
   /**
    * Constructor : channel's event wrapper

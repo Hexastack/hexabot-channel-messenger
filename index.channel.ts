@@ -17,7 +17,6 @@ import fetch from 'node-fetch';
 import { Attachment } from '@/attachment/schemas/attachment.schema';
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { ChannelService } from '@/channel/channel.service';
-import EventWrapper from '@/channel/lib/EventWrapper';
 import ChannelHandler from '@/channel/lib/Handler';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
@@ -808,7 +807,7 @@ export default class MessengerHandler extends ChannelHandler<
    * @returns The messenger's response, otherwise an error
    */
   async sendMessage(
-    event: EventWrapper<any, any>,
+    event: MessengerEventWrapper,
     envelope: StdOutgoingEnvelope,
     options: BlockOptions,
     _context?: any,
