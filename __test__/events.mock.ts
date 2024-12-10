@@ -17,6 +17,7 @@ import {
 } from '@/chat/schemas/types/message';
 import { Payload } from '@/chat/schemas/types/quick-reply';
 
+import { MESSENGER_CHANNEL_NAME } from '../settings';
 import { Messenger } from '../types';
 
 const img_url =
@@ -129,7 +130,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
     'Payload Event',
     payloadEvent,
     {
-      channelData: {},
+      channelData: { name: MESSENGER_CHANNEL_NAME },
       id: undefined,
       eventType: IncomingMessageType.message,
       messageType: IncomingMessageType.postback,
@@ -144,7 +145,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
     'Text Event',
     textEvent,
     {
-      channelData: {},
+      channelData: { name: MESSENGER_CHANNEL_NAME },
       id: textEvent.message.mid,
       eventType: IncomingMessageType.message,
       messageType: IncomingMessageType.message,
@@ -158,7 +159,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
     'Echo Event',
     echoEvent,
     {
-      channelData: {},
+      channelData: { name: MESSENGER_CHANNEL_NAME },
       id: echoEvent.message.mid,
       eventType: StdEventType.echo,
       messageType: IncomingMessageType.message,
@@ -172,7 +173,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
     'File Event',
     fileEvent,
     {
-      channelData: {},
+      channelData: { name: MESSENGER_CHANNEL_NAME },
       id: fileEvent.message.mid,
       eventType: IncomingMessageType.message,
       messageType: IncomingMessageType.attachments,
@@ -201,7 +202,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
     'Location Event',
     locationEvent,
     {
-      channelData: {},
+      channelData: { name: MESSENGER_CHANNEL_NAME },
       id: locationEvent.message.mid,
       eventType: IncomingMessageType.message,
       messageType: IncomingMessageType.location,

@@ -138,15 +138,6 @@ export default class MessengerEventWrapper extends EventWrapper<
   }
 
   /**
-   * Returns channel related data
-   *
-   * @returns Channel related data
-   */
-  getChannelData(): any {
-    return this.get('channelData', {});
-  }
-
-  /**
    * Returns the message id
    *
    * @returns Message ID

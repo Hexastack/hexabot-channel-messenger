@@ -41,9 +41,10 @@ import {
   rootMongooseTestModule,
 } from '@/utils/test/test';
 
-import { messengerEvents } from './events.mock';
 import MessengerHandler from '../index.channel';
 import MessengerEventWrapper from '../wrapper';
+
+import { messengerEvents } from './events.mock';
 
 describe(`Messenger event wrapper`, () => {
   let handler: MessengerHandler;
