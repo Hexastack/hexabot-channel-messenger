@@ -19,7 +19,6 @@ import { AttachmentService } from '@/attachment/services/attachment.service';
 import { ChannelService } from '@/channel/channel.service';
 import EventWrapper from '@/channel/lib/EventWrapper';
 import ChannelHandler from '@/channel/lib/Handler';
-import { ChannelName } from '@/channel/types';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
 import { Label, LabelDocument } from '@/chat/schemas/label.schema';
@@ -936,7 +935,7 @@ export default class MessengerHandler extends ChannelHandler<
       last_name: profile.last_name,
       gender: profile.gender,
       channel: {
-        name: handler.getName() as ChannelName,
+        name: handler.getName(),
       },
       assignedAt: null,
       assignedTo: null,

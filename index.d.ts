@@ -6,10 +6,17 @@
  * 2. All derivative works must include clear attribution to the original creator and software, Hexastack and Hexabot, in a prominent location (e.g., in the software's "About" section, documentation, and README file).
  */
 
-import DEFAULT_MESSENGER_SETTINGS, { MESSENGER_GROUP_NAME } from './settings';
+import DEFAULT_MESSENGER_SETTINGS, {
+  MESSENGER_CHANNEL_NAME,
+  MESSENGER_GROUP_NAME,
+} from './settings';
 
 declare global {
   interface Settings extends SettingTree<typeof DEFAULT_MESSENGER_SETTINGS> {}
+
+  interface SubscriberChannelDict {
+    [MESSENGER_CHANNEL_NAME]: Record<string, never>;
+  }
 }
 
 declare module '@nestjs/event-emitter' {

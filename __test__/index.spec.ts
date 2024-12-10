@@ -50,6 +50,7 @@ import {
 } from '@/utils/test/test';
 
 import MessengerHandler from '../index.channel';
+
 import {
   messengerAttachment,
   messengerButtons,
