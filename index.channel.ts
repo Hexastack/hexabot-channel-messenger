@@ -1,5 +1,5 @@
 /*
- * Copyright © 2024 Hexastack. All rights reserved.
+ * Copyright © 2025 Hexastack. All rights reserved.
  *
  * Licensed under the GNU Affero General Public License v3.0 (AGPLv3) with the following additional terms:
  * 1. The name "Hexabot" is a trademark of Hexastack. You may not use this name in derivative works without express written permission.
@@ -8,12 +8,13 @@
 
 import crypto from 'crypto';
 import path from 'path';
-import url from 'url';
+import { Stream } from 'stream';
 
 import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { NextFunction, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { ChannelService } from '@/channel/channel.service';
@@ -116,12 +117,11 @@ export default class MessengerHandler extends ChannelHandler<
     mimeType?: string;
   }) {
     const response = await this.httpService.axiosRef.get(url, {
-      responseType: 'arraybuffer',
+      responseType: 'stream',
     });
-    const fileBuffer = Buffer.from(response.data);
-    return await this.attachmentService.store(fileBuffer, {
+    return await this.attachmentService.store(response.data, {
       name: filename || uuidv4(),
-      size: fileBuffer.length,
+      size: parseInt(response.headers['content-length']),
       type: mimeType || response.headers['content-type'],
       channel: {
         [this.getName()]: { url, filename, mimeType },
@@ -964,22 +964,21 @@ export default class MessengerHandler extends ChannelHandler<
     // Save profile picture locally (messenger URL expires)
     let avatar = null;
     if (profile.profile_pic) {
-      const response = await this.httpService.axiosRef.get(
+      const response = await this.httpService.axiosRef.get<Stream>(
         profile.profile_pic,
         {
-          responseType: 'arraybuffer',
+          responseType: 'stream',
         },
       );
-      const fileBuffer = Buffer.from(response.data);
       // Parse the URL
-      const parsedUrl = url.parse(profile.profile_pic);
+      const parsedUrl = new URL(profile.profile_pic);
 
       // Extract the filename
       const filename = path.basename(parsedUrl.pathname);
-      const attachment = await this.attachmentService.store(fileBuffer, {
+      const attachment = await this.attachmentService.store(response.data, {
         name: filename,
         type: response.headers['content-type'],
-        size: fileBuffer.length,
+        size: parseInt(response.headers['content-length']),
         channel: {
           [this.getName()]: { url: profile.profile_pic },
         },
@@ -1171,8 +1170,4 @@ export default class MessengerHandler extends ChannelHandler<
   async _deletePersistentMenu(): Promise<any> {
     return await this.api.profile.deleteMessengerProfile(['persistent_menu']);
   }
-}
-
-function uuidv4(): string {
-  throw new Error('Function not implemented.');
 }
