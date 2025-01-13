@@ -65,7 +65,7 @@ export const messengerList: Messenger.OutgoingMessageBase = {
           title: 'First',
           subtitle: 'About being first',
           image_url:
-            'http://localhost:4000/attachment/download/1/attachment.jpg',
+            'http://localhost:4000/webhook/messenger/download/1/attachment.jpg',
           buttons: [
             {
               type: ButtonType.postback,
@@ -78,7 +78,7 @@ export const messengerList: Messenger.OutgoingMessageBase = {
           title: 'Second',
           subtitle: 'About being second',
           image_url:
-            'http://localhost:4000/attachment/download/1/attachment.jpg',
+            'http://localhost:4000/webhook/messenger/download/1/attachment.jpg',
           buttons: [
             {
               type: ButtonType.postback,
@@ -113,7 +113,7 @@ export const messengerCarousel: Messenger.OutgoingMessageBase = {
           title: 'First',
           subtitle: 'About being first',
           image_url:
-            'http://localhost:4000/attachment/download/1/attachment.jpg',
+            'http://localhost:4000/webhook/messenger/download/1/attachment.jpg',
           buttons: [
             {
               type: ButtonType.postback,
@@ -126,7 +126,7 @@ export const messengerCarousel: Messenger.OutgoingMessageBase = {
           title: 'Second',
           subtitle: 'About being second',
           image_url:
-            'http://localhost:4000/attachment/download/1/attachment.jpg',
+            'http://localhost:4000/webhook/messenger/download/1/attachment.jpg',
           buttons: [
             {
               type: ButtonType.postback,
@@ -144,7 +144,7 @@ export const messengerAttachment: Messenger.OutgoingMessageBase = {
   attachment: {
     type: Messenger.AttachmentType.image,
     payload: {
-      url: 'http://localhost:4000/attachment/download/1/attachment.jpg',
+      url: 'http://localhost:4000/webhook/messenger/download/1/attachment.jpg',
       is_reusable: false,
     },
   },

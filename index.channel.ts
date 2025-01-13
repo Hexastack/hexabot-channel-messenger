@@ -7,14 +7,14 @@
  */
 
 import crypto from 'crypto';
+import path from 'path';
+import url from 'url';
 
 import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { NextFunction, Request, Response } from 'express';
-import fetch from 'node-fetch';
 
-import { Attachment } from '@/attachment/schemas/attachment.schema';
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { ChannelService } from '@/channel/channel.service';
 import ChannelHandler from '@/channel/lib/Handler';
@@ -22,7 +22,7 @@ import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
 import { Label, LabelDocument } from '@/chat/schemas/label.schema';
 import { Subscriber } from '@/chat/schemas/subscriber.schema';
-import { WithUrl } from '@/chat/schemas/types/attachment';
+import { AttachmentRef, FileType } from '@/chat/schemas/types/attachment';
 import { Button, ButtonType } from '@/chat/schemas/types/button';
 import {
   ContentElement,
@@ -94,6 +94,39 @@ export default class MessengerHandler extends ChannelHandler<
       this.httpService,
       settings ? settings.access_token : '',
     );
+  }
+
+  /**
+   * Fetches a remote file from the specified URL, stores it as an attachment, and returns the stored attachment metadata.
+   *
+   * @param params - The parameters required to fetch and store the remote attachment.
+   * @param params.url - The URL of the remote file to fetch.
+   * @param [params.filename] - The desired filename for the stored attachment. If not provided, a UUID is generated.
+   * @param [params.mimeType] - The MIME type of the file. If not provided, it is determined from the response headers.
+   *
+   * @returns - A promise resolving to the metadata of the stored attachment.
+   */
+  async fetchAndStoreRemoteAttachment({
+    url,
+    filename = uuidv4(),
+    mimeType,
+  }: {
+    url: string;
+    filename?: string;
+    mimeType?: string;
+  }) {
+    const response = await this.httpService.axiosRef.get(url, {
+      responseType: 'arraybuffer',
+    });
+    const fileBuffer = Buffer.from(response.data);
+    return await this.attachmentService.store(fileBuffer, {
+      name: filename || uuidv4(),
+      size: fileBuffer.length,
+      type: mimeType || response.headers['content-type'],
+      channel: {
+        [this.getName()]: { url, filename, mimeType },
+      },
+    });
   }
 
   /**
@@ -564,6 +597,26 @@ export default class MessengerHandler extends ChannelHandler<
   }
 
   /**
+   * Converts a given `FileType` to the corresponding `AttachmentType`.
+   * Provides a fallback to `AttachmentType.fallback` for unknown or unsupported file types.
+   *
+   * @param fileType - The file type to be converted.
+   *
+   * @returns The corresponding `AttachmentType` value.
+   */
+  toAttachmentType(fileType: FileType): Messenger.AttachmentType {
+    const mapping: Record<FileType, Messenger.AttachmentType> = {
+      [FileType.image]: Messenger.AttachmentType.image,
+      [FileType.video]: Messenger.AttachmentType.video,
+      [FileType.audio]: Messenger.AttachmentType.audio,
+      [FileType.file]: Messenger.AttachmentType.file,
+      [FileType.unknown]: Messenger.AttachmentType.file, // Fallback for unknown type
+    };
+
+    return mapping[fileType];
+  }
+
+  /**
    * Formats an attachment + quick replies message that can be sent to Messenger
    *
    * @param message - An attachment + quick replies to be sent to the end user
@@ -571,15 +624,15 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @returns A Messenger ready to be sent attachment message
    */
-  _attachmentFormat(
-    message: StdOutgoingAttachmentMessage<WithUrl<Attachment>>,
+  async _attachmentFormat(
+    message: StdOutgoingAttachmentMessage,
     _options: BlockOptions,
-  ): Messenger.OutgoingMessageBase {
+  ): Promise<Messenger.OutgoingMessageBase> {
     const payload: Messenger.OutgoingMessageBase = {
       attachment: {
-        type: <Messenger.AttachmentType>(<unknown>message.attachment.type),
+        type: this.toAttachmentType(message.attachment.type),
         payload: {
-          url: message.attachment.payload.url,
+          url: await this.getPublicUrl(message.attachment.payload),
           is_reusable: false,
         },
       },
@@ -598,17 +651,18 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @returns A Messenger elements object
    */
-  _formatElements(
+  async _formatElements(
     data: ContentElement[],
     options: BlockOptions,
-  ): Messenger.MessageElement[] {
+  ): Promise<Messenger.MessageElement[]> {
     if (!options.content || !options.content.fields) {
       throw new Error('Content options are missing the fields');
     }
 
     const fields = options.content.fields;
     const buttons: Button[] = options.content.buttons;
-    return data.map((item) => {
+    const result = [];
+    for (const item of data) {
       const element: Messenger.MessageElement = {
         title: item[fields.title],
         buttons: item.buttons || [],
@@ -618,17 +672,11 @@ export default class MessengerHandler extends ChannelHandler<
       }
 
       if (fields.image_url && item[fields.image_url]) {
-        const attachmentPayload = item[fields.image_url].payload;
-        if (attachmentPayload.url) {
-          if (!attachmentPayload.id) {
-            // @deprecated
-            this.logger.warn(
-              'Messenger Channel Handler: Attachment remote url has been deprecated',
-              item,
-            );
-          }
-          element.image_url = attachmentPayload.url;
-        }
+        const attachmentRef: AttachmentRef =
+          typeof item[fields.image_url] === 'string'
+            ? { url: item[fields.image_url] }
+            : (item[fields.image_url].payload as AttachmentRef);
+        element.image_url = await this.getPublicUrl(attachmentRef);
       }
 
       buttons.forEach((button: Button, index) => {
@@ -659,8 +707,10 @@ export default class MessengerHandler extends ChannelHandler<
       if (Array.isArray(element.buttons) && element.buttons.length === 0) {
         delete element.buttons;
       }
-      return element;
-    });
+      result.push(element);
+    }
+
+    return result;
   }
 
   /**
@@ -677,10 +727,10 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @returns A Messenger ready to be sent list template message
    */
-  _listFormat(
+  async _listFormat(
     message: StdOutgoingListMessage,
     options: BlockOptions,
-  ): Messenger.OutgoingMessageBase {
+  ): Promise<Messenger.OutgoingMessageBase> {
     const data = message.elements || [];
 
     // Items count min check
@@ -689,7 +739,7 @@ export default class MessengerHandler extends ChannelHandler<
     }
 
     // Populate items (elements/cards) with content
-    const elements = this._formatElements(data, options);
+    const elements = await this._formatElements(data, options);
     const pagination = message.pagination;
 
     // Toggle "View More" button (check if there's more items to display)
@@ -724,10 +774,10 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @returns A Messenger ready to be sent generic template message
    */
-  _carouselFormat(
+  async _carouselFormat(
     message: StdOutgoingListMessage,
     options: BlockOptions,
-  ): Messenger.OutgoingMessageBase {
+  ): Promise<Messenger.OutgoingMessageBase> {
     const data = message.elements || [];
     let elements = [];
     // Items count min check
@@ -736,7 +786,7 @@ export default class MessengerHandler extends ChannelHandler<
     }
 
     // Populate items (elements/cards) with content
-    elements = this._formatElements(data, options);
+    elements = await this._formatElements(data, options);
     const payload: Messenger.TemplateGeneric = {
       template_type: Messenger.TemplateType.generic,
       elements,
@@ -773,19 +823,19 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @returns A template filled with its payload
    */
-  _formatMessage(
+  async _formatMessage(
     envelope: StdOutgoingEnvelope,
     options: BlockOptions,
-  ): Messenger.OutgoingMessageBase {
+  ): Promise<Messenger.OutgoingMessageBase> {
     switch (envelope.format) {
       case OutgoingMessageFormat.attachment:
-        return this._attachmentFormat(envelope.message, options);
+        return await this._attachmentFormat(envelope.message, options);
       case OutgoingMessageFormat.buttons:
         return this._buttonsFormat(envelope.message, options);
       case OutgoingMessageFormat.carousel:
-        return this._carouselFormat(envelope.message, options);
+        return await this._carouselFormat(envelope.message, options);
       case OutgoingMessageFormat.list:
-        return this._listFormat(envelope.message, options);
+        return await this._listFormat(envelope.message, options);
       case OutgoingMessageFormat.quickReplies:
         return this._quickRepliesFormat(envelope.message, options);
       case OutgoingMessageFormat.text:
@@ -813,7 +863,7 @@ export default class MessengerHandler extends ChannelHandler<
     _context?: any,
   ): Promise<{ mid: string }> {
     const handler: MessengerHandler = this;
-    const message = handler._formatMessage(envelope, options);
+    const message = await handler._formatMessage(envelope, options);
 
     const req = async function () {
       try {
@@ -912,18 +962,29 @@ export default class MessengerHandler extends ChannelHandler<
     );
 
     // Save profile picture locally (messenger URL expires)
+    let avatar = null;
     if (profile.profile_pic) {
-      fetch(profile.profile_pic, {})
-        .then(async (res) => {
-          this.attachmentService.uploadProfilePic(res, profile.id + '.jpeg');
-        })
-        .catch((err: Error) => {
-          // Serve a generic picture instead depending on the file existence
-          this.logger.error(
-            'Messenger Channel Handler : Error while fetching profile picture',
-            err,
-          );
-        });
+      const response = await this.httpService.axiosRef.get(
+        profile.profile_pic,
+        {
+          responseType: 'arraybuffer',
+        },
+      );
+      const fileBuffer = Buffer.from(response.data);
+      // Parse the URL
+      const parsedUrl = url.parse(profile.profile_pic);
+
+      // Extract the filename
+      const filename = path.basename(parsedUrl.pathname);
+      const attachment = await this.attachmentService.store(fileBuffer, {
+        name: filename,
+        type: response.headers['content-type'],
+        size: fileBuffer.length,
+        channel: {
+          [this.getName()]: { url: profile.profile_pic },
+        },
+      });
+      avatar = attachment.id;
     }
 
     const defautLanguage = await this.languageService.getDefaultLanguage();
@@ -936,6 +997,7 @@ export default class MessengerHandler extends ChannelHandler<
       channel: {
         name: handler.getName(),
       },
+      avatar,
       assignedAt: null,
       assignedTo: null,
       labels: [],
@@ -1109,4 +1171,8 @@ export default class MessengerHandler extends ChannelHandler<
   async _deletePersistentMenu(): Promise<any> {
     return await this.api.profile.deleteMessengerProfile(['persistent_menu']);
   }
+}
+
+function uuidv4(): string {
+  throw new Error('Function not implemented.');
 }

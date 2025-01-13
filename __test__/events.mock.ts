@@ -182,7 +182,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
         attachments: {
           type: FileType.image,
           payload: {
-            url: img_url,
+            id: '9'.repeat(24),
           },
         },
       } as Payload,
@@ -190,11 +190,11 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
         type: PayloadType.attachments,
         attachment: {
           payload: {
-            url: img_url,
+            id: '9'.repeat(24),
           },
           type: FileType.image,
         },
-        serialized_text: `attachment:image:${img_url}`,
+        serialized_text: `attachment:image:undefined`,
       } as StdIncomingAttachmentMessage,
     },
   ],
