@@ -43,6 +43,7 @@ import { SubscriberService } from '@/chat/services/subscriber.service';
 import { Content } from '@/cms/schemas/content.schema';
 import { MenuTree } from '@/cms/schemas/types/menu';
 import { MenuService } from '@/cms/services/menu.service';
+import { config } from '@/config';
 import { I18nService } from '@/i18n/services/i18n.service';
 import { LanguageService } from '@/i18n/services/language.service';
 import { LoggerService } from '@/logger/logger.service';
@@ -970,19 +971,24 @@ export default class MessengerHandler extends ChannelHandler<
           responseType: 'stream',
         },
       );
+
       // Parse the URL
       const parsedUrl = new URL(profile.profile_pic);
 
       // Extract the filename
       const filename = path.basename(parsedUrl.pathname);
-      const attachment = await this.attachmentService.store(response.data, {
-        name: filename,
-        type: response.headers['content-type'],
-        size: parseInt(response.headers['content-length']),
-        channel: {
-          [this.getName()]: { url: profile.profile_pic },
+      const attachment = await this.attachmentService.store(
+        response.data,
+        {
+          name: filename,
+          type: response.headers['content-type'],
+          size: parseInt(response.headers['content-length']),
+          channel: {
+            [this.getName()]: { url: profile.profile_pic },
+          },
         },
-      });
+        config.parameters.avatarDir,
+      );
       avatar = attachment.id;
     }
 
