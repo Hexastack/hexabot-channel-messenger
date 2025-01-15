@@ -116,7 +116,7 @@ export default class MessengerHandler extends ChannelHandler<
       const files: AttachmentFile[] = [];
       for (const remoteFile of remoteFiles) {
         const response = await this.httpService.axiosRef.get(
-          remoteFile.payload.url,
+          remoteFile.payload.url!,
           {
             responseType: 'stream',
           },
@@ -171,11 +171,11 @@ export default class MessengerHandler extends ChannelHandler<
       await Promise.all(
         labels
           .filter((label) => {
-            return this.getName() in label.label_id;
+            return label.label_id && this.getName() in label.label_id;
           })
           .map((label) => {
             return this.api.customLabels.deleteCustomLabel(
-              label.label_id[this.getName()],
+              label.label_id![this.getName()],
             );
           }),
       );
@@ -212,7 +212,6 @@ export default class MessengerHandler extends ChannelHandler<
         this.logger.error(
           'Messenger Channel Handler : Unable to sync user labels: Subscriber(s) not found ',
           criteria,
-          oldSubscriber.id,
         );
         return;
       }
@@ -228,11 +227,15 @@ export default class MessengerHandler extends ChannelHandler<
           a.filter((x: string) => !b.includes(x));
 
         const oldLabelIds = oldSubscriber.labels
-          .map((l) => (channel in l.label_id ? l.label_id[channel] : null))
+          .map((l) =>
+            l.label_id && channel in l.label_id ? l.label_id[channel] : null,
+          )
           .filter((id) => !!id);
 
         const newLabelIds = labels
-          .map((l) => (channel in l.label_id ? l.label_id[channel] : null))
+          .map((l) =>
+            l.label_id && channel in l.label_id ? l.label_id[channel] : null,
+          )
           .filter((id) => !!id);
 
         const diff = difference(oldLabelIds, newLabelIds).concat(
@@ -380,7 +383,7 @@ export default class MessengerHandler extends ChannelHandler<
     const settings = await this.getSettings();
     const expectedHash = crypto
       .createHmac('sha1', settings.app_secret)
-      .update(req.rawBody)
+      .update(req.rawBody!)
       .digest('hex');
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -665,7 +668,7 @@ export default class MessengerHandler extends ChannelHandler<
 
     const fields = options.content.fields;
     const buttons: Button[] = options.content.buttons;
-    const result = [];
+    const result: Messenger.MessageElement[] = [];
     for (const item of data) {
       const element: Messenger.MessageElement = {
         title: item[fields.title],
@@ -783,7 +786,7 @@ export default class MessengerHandler extends ChannelHandler<
     options: BlockOptions,
   ): Promise<Messenger.OutgoingMessageBase> {
     const data = message.elements || [];
-    let elements = [];
+    let elements: Messenger.MessageElement[] = [];
     // Items count min check
     if (data.length === 0 || data.length > 10) {
       throw new Error('Invalid content count for carousel (0 < count <= 10)');
@@ -958,7 +961,7 @@ export default class MessengerHandler extends ChannelHandler<
     const profile = event.getProfile();
 
     // Save profile picture locally (messenger URL expires)
-    if (profile.profile_pic) {
+    if (profile?.profile_pic) {
       const response = await this.httpService.axiosRef.get<Stream>(
         profile.profile_pic,
         {
