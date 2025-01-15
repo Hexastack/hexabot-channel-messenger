@@ -9,11 +9,15 @@
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AttachmentRepository } from '@/attachment/repositories/attachment.repository';
-import { AttachmentModel } from '@/attachment/schemas/attachment.schema';
+import {
+  Attachment,
+  AttachmentModel,
+} from '@/attachment/schemas/attachment.schema';
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { ChannelService } from '@/channel/channel.service';
 import { LabelRepository } from '@/chat/repositories/label.repository';
@@ -63,6 +67,7 @@ describe(`Messenger event wrapper`, () => {
           LabelModel,
           LanguageModel,
         ]),
+        JwtModule,
       ],
       providers: [
         {
@@ -121,6 +126,10 @@ describe(`Messenger event wrapper`, () => {
       ],
     }).compile();
     handler = module.get<MessengerHandler>(MessengerHandler);
+    jest.spyOn(handler, 'fetchAndStoreRemoteAttachment').mockResolvedValue({
+      id: '9'.repeat(24),
+      type: 'image/png',
+    } as Attachment);
   });
 
   afterAll(async () => {
@@ -130,11 +139,12 @@ describe(`Messenger event wrapper`, () => {
 
   test.each(messengerEvents)(
     'should wrap event : %s',
-    (testCase, e, expected) => {
+    async (testCase, e, expected) => {
       const event = new MessengerEventWrapper(
         handler as unknown as MessengerHandler,
         e,
       );
+      await event.preprocess();
       expect(event.getChannelData()).toEqual(expected.channelData);
       if (testCase === 'Payload Event') {
         expect(event.getId).toThrow();

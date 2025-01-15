@@ -9,6 +9,7 @@
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -78,6 +79,7 @@ describe('Messenger Handler', () => {
           LabelModel,
           LanguageModel,
         ]),
+        JwtModule,
       ],
       providers: [
         {
@@ -136,10 +138,17 @@ describe('Messenger Handler', () => {
       ],
     }).compile();
     handler = module.get<MessengerHandler>(MessengerHandler);
+
+    jest
+      .spyOn(handler, 'getPublicUrl')
+      .mockResolvedValue(
+        'http://localhost:4000/webhook/messenger/download/1/attachment.jpg',
+      );
   });
 
   afterAll(async () => {
     await closeInMongodConnection();
+    jest.restoreAllMocks();
   });
 
   it('should have correct name', () => {
@@ -162,15 +171,15 @@ describe('Messenger Handler', () => {
     expect(formatted).toEqual(messengerButtons);
   });
 
-  it('should format list properly', () => {
-    const formatted = handler._listFormat(contentMessage, {
+  it('should format list properly', async () => {
+    const formatted = await handler._listFormat(contentMessage, {
       content: contentMessage.options,
     });
     expect(formatted).toEqual(messengerList);
   });
 
-  it('should format carousel properly', () => {
-    const formatted = handler._carouselFormat(contentMessage, {
+  it('should format carousel properly', async () => {
+    const formatted = await handler._carouselFormat(contentMessage, {
       content: {
         ...contentMessage.options,
         display: OutgoingMessageFormat.carousel,
@@ -179,8 +188,8 @@ describe('Messenger Handler', () => {
     expect(formatted).toEqual(messengerCarousel);
   });
 
-  it('should format attachment properly', () => {
-    const formatted = handler._attachmentFormat(attachmentMessage, {});
+  it('should format attachment properly', async () => {
+    const formatted = await handler._attachmentFormat(attachmentMessage, {});
     expect(formatted).toEqual(messengerAttachment);
   });
 });

@@ -6,12 +6,9 @@
  * 2. All derivative works must include clear attribution to the original creator and software, Hexastack and Hexabot, in a prominent location (e.g., in the software's "About" section, documentation, and README file).
  */
 
+import { Attachment } from '@/attachment/schemas/attachment.schema';
 import EventWrapper from '@/channel/lib/EventWrapper';
-import {
-  AttachmentForeignKey,
-  AttachmentPayload,
-  FileType,
-} from '@/chat/schemas/types/attachment';
+import { AttachmentPayload, FileType } from '@/chat/schemas/types/attachment';
 import {
   IncomingMessageType,
   PayloadType,
@@ -29,21 +26,25 @@ type MessengerEventAdapter =
       eventType: StdEventType.unknown;
       messageType: never;
       raw: Messenger.Event;
+      attachments: never;
     }
   | {
       eventType: StdEventType.read;
       messageType: never;
       raw: Messenger.MessageReadEvent;
+      attachments: never;
     }
   | {
       eventType: StdEventType.delivery;
       messageType: never;
       raw: Messenger.MessageDeliveryEvent;
+      attachments: never;
     }
   | {
       eventType: StdEventType.message;
       messageType: IncomingMessageType.postback;
       raw: Messenger.IncomingMessage<Messenger.IncomingPostback>;
+      attachments: never;
     }
   | {
       eventType: StdEventType.message | StdEventType.echo;
@@ -51,6 +52,7 @@ type MessengerEventAdapter =
       raw: Messenger.IncomingMessage<
         Messenger.IncomingAnyMessage<Messenger.IncomingTextMessage>
       >;
+      attachments: never;
     }
   | {
       eventType: StdEventType.message;
@@ -58,6 +60,7 @@ type MessengerEventAdapter =
       raw: Messenger.IncomingMessage<
         Messenger.IncomingAnyMessage<Messenger.IncomingQuickReplyMessage>
       >;
+      attachments: never;
     }
   | {
       eventType: StdEventType.message | StdEventType.echo;
@@ -67,17 +70,20 @@ type MessengerEventAdapter =
       raw: Messenger.IncomingMessage<
         Messenger.IncomingAnyMessage<Messenger.IncomingAttachmentMessage>
       >;
+      attachments: Attachment[];
     }
   | {
       eventType: StdEventType.message | StdEventType.echo;
       messageType: IncomingMessageType.unknown;
       raw: Messenger.IncomingMessage;
+      attachments: never;
     };
 
 export default class MessengerEventWrapper extends EventWrapper<
   MessengerEventAdapter,
   Messenger.Event,
-  typeof MESSENGER_CHANNEL_NAME
+  typeof MESSENGER_CHANNEL_NAME,
+  MessengerHandler
 > {
   /**
    * Constructor : channel's event wrapper
@@ -137,6 +143,26 @@ export default class MessengerEventWrapper extends EventWrapper<
       this._adapter.eventType = StdEventType.unknown;
     }
     this._adapter.raw = event;
+  }
+
+  /**
+   * Fetches and stores remote attachments.
+   */
+  async preprocess() {
+    if (
+      this._adapter.eventType === StdEventType.message &&
+      this._adapter.messageType === IncomingMessageType.attachments
+    ) {
+      const remoteAttachments = this._adapter.raw.message.attachments
+        .filter((a) => !!a.payload.url)
+        .map((attachment) => {
+          return this.getHandler().fetchAndStoreRemoteAttachment({
+            url: attachment.payload.url,
+            filename: attachment.payload.title,
+          });
+        });
+      this._adapter.attachments = await Promise.all(remoteAttachments);
+    }
   }
 
   /**
@@ -220,15 +246,24 @@ export default class MessengerEventWrapper extends EventWrapper<
         }
 
         case IncomingMessageType.attachments: {
-          const attachment: Messenger.Attachment =
-            this._adapter.raw.message.attachments[0];
+          // @TODO: deal with stickers and fallbacks
+          if (
+            !this._adapter.attachments ||
+            this._adapter.attachments.length === 0
+          ) {
+            return {
+              type: PayloadType.attachments,
+              attachments: { type: FileType.unknown, payload: { id: null } },
+            };
+          }
+
+          const { type, id } = this._adapter.attachments[0];
+
           return {
             type: PayloadType.attachments,
             attachments: {
-              type: <FileType>(<unknown>attachment.type),
-              payload: {
-                url: attachment?.payload?.url || '',
-              },
+              type: Attachment.getTypeByMime(type),
+              payload: { id },
             },
           };
         }
@@ -281,6 +316,7 @@ export default class MessengerEventWrapper extends EventWrapper<
       }
       case IncomingMessageType.attachments: {
         const attachments = this._adapter.raw.message.attachments;
+
         let serialized_text = 'attachment:';
         if (attachments[0].type === Messenger.AttachmentType.fallback) {
           // Handle fallback
@@ -292,25 +328,21 @@ export default class MessengerEventWrapper extends EventWrapper<
           // Handle stickers
           serialized_text += `sticker:${attachments[0].payload.sticker_id}`;
         } else {
-          serialized_text += `${attachments[0].type}:${attachments[0].payload.url}`;
+          serialized_text += `${attachments[0].type}:${attachments[0].payload.title}`;
         }
-        const stdAttachments = attachments.map((att) => {
-          return {
-            type: Object.values(FileType).includes(
-              <FileType>(<unknown>att.type),
-            )
-              ? <FileType>(<unknown>att.type)
-              : FileType.unknown,
-            payload: {
-              url: att.payload.url || '',
-            },
-          };
-        });
+
+        const attachmentPayloads: AttachmentPayload[] =
+          this._adapter.attachments.map(({ id, type }) => ({
+            type: Attachment.getTypeByMime(type),
+            payload: { id },
+          }));
         return {
           type: PayloadType.attachments,
           serialized_text,
           attachment:
-            stdAttachments.length > 0 ? stdAttachments[0] : stdAttachments,
+            attachmentPayloads.length === 1
+              ? attachmentPayloads[0]
+              : attachmentPayloads,
         };
       }
       default:
@@ -323,7 +355,7 @@ export default class MessengerEventWrapper extends EventWrapper<
    * @deprecated
    * @returns Received attachments message
    */
-  getAttachments(): AttachmentPayload<AttachmentForeignKey>[] {
+  getAttachments(): AttachmentPayload[] {
     return this._adapter.eventType === StdEventType.message &&
       this._adapter.messageType === IncomingMessageType.attachments
       ? [].concat(this._adapter.raw.message.attachments as any)
