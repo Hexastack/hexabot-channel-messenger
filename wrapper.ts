@@ -85,6 +85,8 @@ export default class MessengerEventWrapper extends EventWrapper<
   typeof MESSENGER_CHANNEL_NAME,
   MessengerHandler
 > {
+  private profile: Messenger.UserData | undefined = undefined;
+
   /**
    * Constructor : channel's event wrapper
    *
@@ -146,23 +148,21 @@ export default class MessengerEventWrapper extends EventWrapper<
   }
 
   /**
-   * Fetches and stores remote attachments.
+   * Sets the profile (user data) retrieved from Messenger
+   *
+   * @param profile Subscriber Messenger Profile
    */
-  async preprocess() {
-    if (
-      this._adapter.eventType === StdEventType.message &&
-      this._adapter.messageType === IncomingMessageType.attachments
-    ) {
-      const remoteAttachments = this._adapter.raw.message.attachments
-        .filter((a) => !!a.payload.url)
-        .map((attachment) => {
-          return this.getHandler().fetchAndStoreRemoteAttachment({
-            url: attachment.payload.url,
-            filename: attachment.payload.title,
-          });
-        });
-      this._adapter.attachments = await Promise.all(remoteAttachments);
-    }
+  setProfile(profile: Messenger.UserData) {
+    this.profile = profile;
+  }
+
+  /**
+   * Gets the profile (user data) retrieved from Messenger
+   *
+   * @returns Subscriber Messenger Profile
+   */
+  getProfile() {
+    return this.profile;
   }
 
   /**
@@ -253,7 +253,7 @@ export default class MessengerEventWrapper extends EventWrapper<
           ) {
             return {
               type: PayloadType.attachments,
-              attachments: { type: FileType.unknown, payload: { id: null } },
+              attachment: { type: FileType.unknown, payload: { id: null } },
             };
           }
 
@@ -261,7 +261,7 @@ export default class MessengerEventWrapper extends EventWrapper<
 
           return {
             type: PayloadType.attachments,
-            attachments: {
+            attachment: {
               type: Attachment.getTypeByMime(type),
               payload: { id },
             },
@@ -348,18 +348,6 @@ export default class MessengerEventWrapper extends EventWrapper<
       default:
         throw new Error('Unknown incoming message type');
     }
-  }
-
-  /**
-   * Return the list of recieved attachments
-   * @deprecated
-   * @returns Received attachments message
-   */
-  getAttachments(): AttachmentPayload[] {
-    return this._adapter.eventType === StdEventType.message &&
-      this._adapter.messageType === IncomingMessageType.attachments
-      ? [].concat(this._adapter.raw.message.attachments as any)
-      : [];
   }
 
   /**

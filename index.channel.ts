@@ -7,16 +7,15 @@
  */
 
 import crypto from 'crypto';
-import path from 'path';
 import { Stream } from 'stream';
 
 import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { NextFunction, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 
 import { AttachmentService } from '@/attachment/services/attachment.service';
+import { AttachmentFile } from '@/attachment/types';
 import { ChannelService } from '@/channel/channel.service';
 import ChannelHandler from '@/channel/lib/Handler';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
@@ -27,6 +26,7 @@ import { AttachmentRef, FileType } from '@/chat/schemas/types/attachment';
 import { Button, ButtonType } from '@/chat/schemas/types/button';
 import {
   ContentElement,
+  IncomingMessageType,
   OutgoingMessageFormat,
   StdEventType,
   StdOutgoingAttachmentMessage,
@@ -43,7 +43,6 @@ import { SubscriberService } from '@/chat/services/subscriber.service';
 import { Content } from '@/cms/schemas/content.schema';
 import { MenuTree } from '@/cms/schemas/types/menu';
 import { MenuService } from '@/cms/services/menu.service';
-import { config } from '@/config';
 import { I18nService } from '@/i18n/services/i18n.service';
 import { LanguageService } from '@/i18n/services/language.service';
 import { LoggerService } from '@/logger/logger.service';
@@ -72,7 +71,7 @@ export default class MessengerHandler extends ChannelHandler<
     protected readonly i18n: I18nService,
     protected readonly languageService: LanguageService,
     protected readonly subscriberService: SubscriberService,
-    protected readonly attachmentService: AttachmentService,
+    public readonly attachmentService: AttachmentService,
     protected readonly messageService: MessageService,
     protected readonly menuService: MenuService,
     protected readonly labelService: LabelService,
@@ -99,35 +98,39 @@ export default class MessengerHandler extends ChannelHandler<
   }
 
   /**
-   * Fetches a remote file from the specified URL, stores it as an attachment, and returns the stored attachment metadata.
+   * Fetches the remote files by URL.
    *
-   * @param params - The parameters required to fetch and store the remote attachment.
-   * @param params.url - The URL of the remote file to fetch.
-   * @param [params.filename] - The desired filename for the stored attachment. If not provided, a UUID is generated.
-   * @param [params.mimeType] - The MIME type of the file. If not provided, it is determined from the response headers.
-   *
-   * @returns - A promise resolving to the metadata of the stored attachment.
+   * @param event - The received message event
+   * @returns - A promise resolving to the metadata of the attachment files.
    */
-  async fetchAndStoreRemoteAttachment({
-    url,
-    filename = uuidv4(),
-    mimeType,
-  }: {
-    url: string;
-    filename?: string;
-    mimeType?: string;
-  }) {
-    const response = await this.httpService.axiosRef.get(url, {
-      responseType: 'stream',
-    });
-    return await this.attachmentService.store(response.data, {
-      name: filename || uuidv4(),
-      size: parseInt(response.headers['content-length']),
-      type: mimeType || response.headers['content-type'],
-      channel: {
-        [this.getName()]: { url, filename, mimeType },
-      },
-    });
+  async getMessageAttachments(
+    event: MessengerEventWrapper,
+  ): Promise<AttachmentFile[]> {
+    if (
+      event._adapter.eventType === StdEventType.message &&
+      event._adapter.messageType === IncomingMessageType.attachments
+    ) {
+      const remoteFiles = event._adapter.raw.message.attachments.filter(
+        (a) => !!a.payload.url,
+      );
+      const files: AttachmentFile[] = [];
+      for (const remoteFile of remoteFiles) {
+        const response = await this.httpService.axiosRef.get(
+          remoteFile.payload.url!,
+          {
+            responseType: 'stream',
+          },
+        );
+
+        files.push({
+          file: response.data,
+          size: response.headers['content-length'],
+          type: response.headers['content-type'],
+        });
+      }
+      return files;
+    }
+    return [];
   }
 
   /**
@@ -168,11 +171,11 @@ export default class MessengerHandler extends ChannelHandler<
       await Promise.all(
         labels
           .filter((label) => {
-            return this.getName() in label.label_id;
+            return label.label_id && this.getName() in label.label_id;
           })
           .map((label) => {
             return this.api.customLabels.deleteCustomLabel(
-              label.label_id[this.getName()],
+              label.label_id![this.getName()],
             );
           }),
       );
@@ -209,7 +212,6 @@ export default class MessengerHandler extends ChannelHandler<
         this.logger.error(
           'Messenger Channel Handler : Unable to sync user labels: Subscriber(s) not found ',
           criteria,
-          oldSubscriber.id,
         );
         return;
       }
@@ -225,11 +227,15 @@ export default class MessengerHandler extends ChannelHandler<
           a.filter((x: string) => !b.includes(x));
 
         const oldLabelIds = oldSubscriber.labels
-          .map((l) => (channel in l.label_id ? l.label_id[channel] : null))
+          .map((l) =>
+            l.label_id && channel in l.label_id ? l.label_id[channel] : null,
+          )
           .filter((id) => !!id);
 
         const newLabelIds = labels
-          .map((l) => (channel in l.label_id ? l.label_id[channel] : null))
+          .map((l) =>
+            l.label_id && channel in l.label_id ? l.label_id[channel] : null,
+          )
           .filter((id) => !!id);
 
         const diff = difference(oldLabelIds, newLabelIds).concat(
@@ -377,7 +383,7 @@ export default class MessengerHandler extends ChannelHandler<
     const settings = await this.getSettings();
     const expectedHash = crypto
       .createHmac('sha1', settings.app_secret)
-      .update(req.rawBody)
+      .update(req.rawBody!)
       .digest('hex');
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -662,7 +668,7 @@ export default class MessengerHandler extends ChannelHandler<
 
     const fields = options.content.fields;
     const buttons: Button[] = options.content.buttons;
-    const result = [];
+    const result: Messenger.MessageElement[] = [];
     for (const item of data) {
       const element: Messenger.MessageElement = {
         title: item[fields.title],
@@ -780,7 +786,7 @@ export default class MessengerHandler extends ChannelHandler<
     options: BlockOptions,
   ): Promise<Messenger.OutgoingMessageBase> {
     const data = message.elements || [];
-    let elements = [];
+    let elements: Messenger.MessageElement[] = [];
     // Items count min check
     if (data.length === 0 || data.length > 10) {
       throw new Error('Invalid content count for carousel (0 < count <= 10)');
@@ -944,12 +950,42 @@ export default class MessengerHandler extends ChannelHandler<
   }
 
   /**
+   * Fetches the subscriber avatar from Messenger
+   *
+   * @param event The message event
+   * @returns The avatar file
+   */
+  async getSubscriberAvatar(
+    event: MessengerEventWrapper,
+  ): Promise<AttachmentFile | undefined> {
+    const profile = event.getProfile();
+
+    // Save profile picture locally (messenger URL expires)
+    if (profile?.profile_pic) {
+      const response = await this.httpService.axiosRef.get<Stream>(
+        profile.profile_pic,
+        {
+          responseType: 'stream',
+        },
+      );
+
+      return {
+        file: response.data,
+        type: response.headers['content-type'],
+        size: parseInt(response.headers['content-length']),
+      };
+    }
+
+    return undefined;
+  }
+
+  /**
    * Fetches the end user profile data
    *
    * @param event - The message event received
    * @returns A promise that resolves to the messenger's response, otherwise an error
    */
-  async getUserData(
+  async getSubscriberData(
     event: MessengerEventWrapper,
   ): Promise<SubscriberCreateDto> {
     const handler = this;
@@ -962,35 +998,7 @@ export default class MessengerHandler extends ChannelHandler<
       userFields,
     );
 
-    // Save profile picture locally (messenger URL expires)
-    let avatar = null;
-    if (profile.profile_pic) {
-      const response = await this.httpService.axiosRef.get<Stream>(
-        profile.profile_pic,
-        {
-          responseType: 'stream',
-        },
-      );
-
-      // Parse the URL
-      const parsedUrl = new URL(profile.profile_pic);
-
-      // Extract the filename
-      const filename = path.basename(parsedUrl.pathname);
-      const attachment = await this.attachmentService.store(
-        response.data,
-        {
-          name: filename,
-          type: response.headers['content-type'],
-          size: parseInt(response.headers['content-length']),
-          channel: {
-            [this.getName()]: { url: profile.profile_pic },
-          },
-        },
-        config.parameters.avatarDir,
-      );
-      avatar = attachment.id;
-    }
+    event.setProfile(profile);
 
     const defautLanguage = await this.languageService.getDefaultLanguage();
 
@@ -1002,7 +1010,6 @@ export default class MessengerHandler extends ChannelHandler<
       channel: {
         name: handler.getName(),
       },
-      avatar,
       assignedAt: null,
       assignedTo: null,
       labels: [],

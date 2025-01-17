@@ -179,7 +179,7 @@ export const messengerEvents: [string, Messenger.IncomingMessage, any][] = [
       messageType: IncomingMessageType.attachments,
       payload: {
         type: PayloadType.attachments,
-        attachments: {
+        attachment: {
           type: FileType.image,
           payload: {
             id: '9'.repeat(24),

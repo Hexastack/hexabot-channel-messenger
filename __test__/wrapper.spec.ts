@@ -126,10 +126,6 @@ describe(`Messenger event wrapper`, () => {
       ],
     }).compile();
     handler = module.get<MessengerHandler>(MessengerHandler);
-    jest.spyOn(handler, 'fetchAndStoreRemoteAttachment').mockResolvedValue({
-      id: '9'.repeat(24),
-      type: 'image/png',
-    } as Attachment);
   });
 
   afterAll(async () => {
@@ -144,9 +140,15 @@ describe(`Messenger event wrapper`, () => {
         handler as unknown as MessengerHandler,
         e,
       );
-      await event.preprocess();
       expect(event.getChannelData()).toEqual(expected.channelData);
-      if (testCase === 'Payload Event') {
+      if (testCase === 'File Event') {
+        event._adapter.attachments = [
+          {
+            id: '9'.repeat(24),
+            type: 'image/png',
+          } as Attachment,
+        ];
+      } else if (testCase === 'Payload Event') {
         expect(event.getId).toThrow();
       } else {
         expect(event.getId()).toEqual(expected.id);
