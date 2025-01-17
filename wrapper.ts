@@ -253,7 +253,7 @@ export default class MessengerEventWrapper extends EventWrapper<
           ) {
             return {
               type: PayloadType.attachments,
-              attachments: { type: FileType.unknown, payload: { id: null } },
+              attachment: { type: FileType.unknown, payload: { id: null } },
             };
           }
 
@@ -261,7 +261,7 @@ export default class MessengerEventWrapper extends EventWrapper<
 
           return {
             type: PayloadType.attachments,
-            attachments: {
+            attachment: {
               type: Attachment.getTypeByMime(type),
               payload: { id },
             },
