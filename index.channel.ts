@@ -124,7 +124,7 @@ export default class MessengerHandler extends ChannelHandler<
 
         files.push({
           file: response.data,
-          size: response.headers['content-length'],
+          size: parseInt(response.headers['content-length']),
           type: response.headers['content-type'],
         });
       }
@@ -972,7 +972,7 @@ export default class MessengerHandler extends ChannelHandler<
       return {
         file: response.data,
         type: response.headers['content-type'],
-        size: parseInt(response.headers['content-length']),
+        size: parseInt(),
       };
     }
 
