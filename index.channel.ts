@@ -972,7 +972,7 @@ export default class MessengerHandler extends ChannelHandler<
       return {
         file: response.data,
         type: response.headers['content-type'],
-        size: parseInt(),
+        size: parseInt(response.headers['content-length']),
       };
     }
 
