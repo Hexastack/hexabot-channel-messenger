@@ -9,13 +9,13 @@
 import { FileType } from '@/chat/schemas/types/attachment';
 import {
   IncomingMessageType,
-  PayloadType,
   StdEventType,
   StdIncomingAttachmentMessage,
   StdIncomingLocationMessage,
   StdIncomingPostBackMessage,
 } from '@/chat/schemas/types/message';
 import { Payload } from '@/chat/schemas/types/quick-reply';
+import { PayloadType } from '@/chat/schemas/types/button';
 
 import { MESSENGER_CHANNEL_NAME } from '../settings';
 import { Messenger } from '../types';
