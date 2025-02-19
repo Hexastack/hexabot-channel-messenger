@@ -1,6 +1,6 @@
 {
   "name": "hexabot-channel-messenger",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Facebook/Messenger Channel Extension for Hexabot Chatbot Builder",
   "scripts": {
     "release:patch": "npm version patch && git push origin main --tags",
