@@ -115,18 +115,30 @@ export default class MessengerHandler extends ChannelHandler<
       );
       const files: AttachmentFile[] = [];
       for (const remoteFile of remoteFiles) {
-        const response = await this.httpService.axiosRef.get(
-          remoteFile.payload.url!,
-          {
-            responseType: 'stream',
-          },
-        );
+        try {
+          if (!remoteFile.payload.url) {
+            throw new Error('Unable to find the payload URL!');
+          }
 
-        files.push({
-          file: response.data,
-          size: parseInt(response.headers['content-length']),
-          type: response.headers['content-type'],
-        });
+          const response = await this.httpService.axiosRef.get(
+            remoteFile.payload.url,
+            {
+              responseType: 'stream',
+            },
+          );
+
+          if (response.headers['content-length']) {
+            files.push({
+              file: response.data,
+              size: parseInt(response.headers['content-length']),
+              type: response.headers['content-type'],
+            });
+          } else {
+            this.logger.warn('Unable to find content-length!');
+          }
+        } catch (err) {
+          this.logger.error('Failed to fetch Attachment', err);
+        }
       }
       return files;
     }
