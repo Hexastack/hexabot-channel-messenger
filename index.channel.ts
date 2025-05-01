@@ -116,10 +116,6 @@ export default class MessengerHandler extends ChannelHandler<
       const files: AttachmentFile[] = [];
       for (const remoteFile of remoteFiles) {
         try {
-          if (!remoteFile.payload.url) {
-            throw new Error('Unable to find the payload URL!');
-          }
-
           const response = await this.httpService.axiosRef.get(
             remoteFile.payload.url,
             {
