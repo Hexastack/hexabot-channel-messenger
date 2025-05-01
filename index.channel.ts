@@ -117,7 +117,7 @@ export default class MessengerHandler extends ChannelHandler<
       for (const remoteFile of remoteFiles) {
         try {
           const response = await this.httpService.axiosRef.get(
-            remoteFile.payload.url,
+            remoteFile.payload.url!,
             {
               responseType: 'stream',
             },
