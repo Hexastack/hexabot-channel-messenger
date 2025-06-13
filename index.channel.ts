@@ -12,7 +12,9 @@ import { Stream } from 'stream';
 import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { InjectModel } from '@nestjs/mongoose';
 import { NextFunction, Request, Response } from 'express';
+import { Document, Model, Query } from 'mongoose';
 
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { AttachmentFile } from '@/attachment/types';
@@ -49,6 +51,7 @@ import { LoggerService } from '@/logger/logger.service';
 import { Setting } from '@/setting/schemas/setting.schema';
 import { CheckboxSetting, TextareaSetting } from '@/setting/schemas/types';
 import { SettingService } from '@/setting/services/setting.service';
+import { DeleteResult } from '@/utils/generics/base-repository';
 import { BaseSchema } from '@/utils/generics/base-schema';
 import { TFilterQuery } from '@/utils/types/filter.types';
 
@@ -76,6 +79,7 @@ export default class MessengerHandler extends ChannelHandler<
     protected readonly menuService: MenuService,
     protected readonly labelService: LabelService,
     protected readonly httpService: HttpService,
+    @InjectModel(Label.name) protected readonly labelModel: Model<Label>,
   ) {
     super(MESSENGER_CHANNEL_NAME, settingService, channelService, logger);
   }
@@ -173,28 +177,41 @@ export default class MessengerHandler extends ChannelHandler<
    *
    * @param labels
    */
-  @OnEvent('hook:label:delete')
-  async onLabelDelete(labels: Label[]): Promise<void> {
-    try {
-      await Promise.all(
-        labels
-          .filter((label) => {
-            return label.label_id && this.getName() in label.label_id;
-          })
-          .map((label) => {
-            return this.api.customLabels.deleteCustomLabel(
-              label.label_id![this.getName()],
-            );
-          }),
-      );
-      this.logger.debug(
-        'Messenger Channel Handler : Successfully removed label(s)',
-      );
-    } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Failed to remove label(s)',
-        err,
-      );
+  @OnEvent('hook:label:preDelete')
+  async onLabelPreDelete(
+    _query: Query<
+      DeleteResult,
+      Document<Label, any, any>,
+      unknown,
+      Label,
+      'deleteOne' | 'deleteMany'
+    >,
+    criteria: TFilterQuery<Label>,
+  ): Promise<void> {
+    if (criteria._id) {
+      const labels = await this.labelModel.find({ _id: criteria._id });
+
+      try {
+        await Promise.all(
+          labels
+            .filter((label) => {
+              return label.label_id && this.getName() in label.label_id;
+            })
+            .map((label) => {
+              return this.api.customLabels.deleteCustomLabel(
+                label.label_id![this.getName()],
+              );
+            }),
+        );
+        this.logger.debug(
+          'Messenger Channel Handler : Successfully removed label(s)',
+        );
+      } catch (err) {
+        this.logger.error(
+          'Messenger Channel Handler : Failed to remove label(s)',
+          err,
+        );
+      }
     }
   }
 
