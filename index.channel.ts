@@ -12,9 +12,8 @@ import { Stream } from 'stream';
 import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { InjectModel } from '@nestjs/mongoose';
 import { NextFunction, Request, Response } from 'express';
-import { Document, Model, Query } from 'mongoose';
+import { Document, Query } from 'mongoose';
 
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { AttachmentFile } from '@/attachment/types';
@@ -79,7 +78,6 @@ export default class MessengerHandler extends ChannelHandler<
     protected readonly menuService: MenuService,
     protected readonly labelService: LabelService,
     protected readonly httpService: HttpService,
-    @InjectModel(Label.name) protected readonly labelModel: Model<Label>,
   ) {
     super(MESSENGER_CHANNEL_NAME, settingService, channelService, logger);
   }
@@ -158,7 +156,7 @@ export default class MessengerHandler extends ChannelHandler<
         created.name,
       );
 
-      await this.labelModel.updateOne(
+      await this.labelService.repository.model.updateOne(
         { _id: created._id },
         {
           $set: {
@@ -193,7 +191,9 @@ export default class MessengerHandler extends ChannelHandler<
     criteria: TFilterQuery<Label>,
   ): Promise<void> {
     if (criteria._id) {
-      const labels = await this.labelModel.find({ _id: criteria._id });
+      const labels = await this.labelService.repository.model.find({
+        _id: criteria._id,
+      });
 
       try {
         await Promise.all(
