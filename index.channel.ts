@@ -151,16 +151,25 @@ export default class MessengerHandler extends ChannelHandler<
    * @param label
    * @param callback
    */
-  @OnEvent('hook:label:create')
-  async onLabelCreate(
-    label: LabelDocument,
-    callback: (result: Record<string, string>) => Promise<void>,
-  ): Promise<void> {
+  @OnEvent('hook:label:preCreate')
+  async onLabelPreCreate(created: LabelDocument): Promise<void> {
     try {
-      const { id } = await this.api.customLabels.createCustomLabel(label.name);
-      await callback({
-        [this.getName()]: id,
-      });
+      const { id } = await this.api.customLabels.createCustomLabel(
+        created.name,
+      );
+
+      await this.labelModel.updateOne(
+        { _id: created._id },
+        {
+          $set: {
+            label_id: {
+              ...(created.label_id || {}),
+              ...{ [this.getName()]: id },
+            },
+          },
+        },
+      );
+
       this.logger.debug(
         'Messenger Channel Handler : Successfully synced label',
       );
