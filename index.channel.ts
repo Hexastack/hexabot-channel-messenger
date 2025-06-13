@@ -92,7 +92,7 @@ export default class MessengerHandler extends ChannelHandler<
    * Logs a debug message indicating the initialization of the Messenger Channel Handler.
    */
   async init(): Promise<void> {
-    this.logger.debug('Messenger Channel Handler : initialization ...');
+    this.logger.debug('initialization ...');
 
     const settings = await this.getSettings();
     this.api = new GraphApi(
@@ -170,14 +170,9 @@ export default class MessengerHandler extends ChannelHandler<
         },
       );
 
-      this.logger.debug(
-        'Messenger Channel Handler : Successfully synced label',
-      );
+      this.logger.debug('Successfully synced label');
     } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Failed to sync label',
-        err,
-      );
+      this.logger.error('Failed to sync label', err);
     }
   }
 
@@ -212,14 +207,9 @@ export default class MessengerHandler extends ChannelHandler<
               );
             }),
         );
-        this.logger.debug(
-          'Messenger Channel Handler : Successfully removed label(s)',
-        );
+        this.logger.debug('Successfully removed label(s)');
       } catch (err) {
-        this.logger.error(
-          'Messenger Channel Handler : Failed to remove label(s)',
-          err,
-        );
+        this.logger.error('Failed to remove label(s)', err);
       }
     }
   }
@@ -244,7 +234,7 @@ export default class MessengerHandler extends ChannelHandler<
 
       if (!oldSubscriber) {
         this.logger.error(
-          'Messenger Channel Handler : Unable to sync user labels: Subscriber(s) not found ',
+          'Unable to sync user labels: Subscriber(s) not found ',
           criteria,
         );
         return;
@@ -283,17 +273,14 @@ export default class MessengerHandler extends ChannelHandler<
             newLabelIds,
           );
           this.logger.debug(
-            'Messenger Channel Handler : Successfully assigned label to user ',
+            'Successfully assigned label to user ',
             res,
             oldSubscriber.id,
           );
         }
       }
     } catch (err) {
-      this.logger.warn(
-        'Messenger Channel Handler : Unable to sync updates',
-        err,
-      );
+      this.logger.warn('Unable to sync updates', err);
     }
   }
 
@@ -306,15 +293,9 @@ export default class MessengerHandler extends ChannelHandler<
   async onGreetingTextUpdate(setting: TextareaSetting): Promise<void> {
     try {
       await this._setGreetingText(setting.value);
-      this.logger.log(
-        'Messenger Channel Handler : Greeting message has been updated',
-        setting,
-      );
+      this.logger.log('Greeting message has been updated', setting);
     } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Unable to update greeting message',
-        err,
-      );
+      this.logger.error('Unable to update greeting message', err);
     }
   }
 
@@ -335,15 +316,9 @@ export default class MessengerHandler extends ChannelHandler<
         await this._deleteGetStartedButton();
       }
 
-      this.logger.log(
-        'Messenger Channel Handler : `Get started` button has been updated',
-        setting,
-      );
+      this.logger.log('`Get started` button has been updated', setting);
     } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Unable to update `Get started` button',
-        err,
-      );
+      this.logger.error('Unable to update `Get started` button', err);
     }
   }
 
@@ -366,15 +341,9 @@ export default class MessengerHandler extends ChannelHandler<
   async onToggleComposerInput(setting: CheckboxSetting): Promise<void> {
     try {
       await this._setPersistentMenu(setting.value);
-      this.logger.log(
-        'Messenger Channel Handler : `Composer Input` has been updated',
-        setting,
-      );
+      this.logger.log('`Composer Input` has been updated', setting);
     } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Unable to update `Composer Input`',
-        err,
-      );
+      this.logger.error('Unable to update `Composer Input`', err);
     }
   }
 
@@ -385,14 +354,9 @@ export default class MessengerHandler extends ChannelHandler<
   async onMenuUpdate(): Promise<void> {
     try {
       await this._setPersistentMenu();
-      this.logger.log(
-        'Messenger Channel Handler : `Persistent Menu` has been updated',
-      );
+      this.logger.log('`Persistent Menu` has been updated');
     } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Unable to update `Persistent Menu`',
-        err,
-      );
+      this.logger.error('Unable to update `Persistent Menu`', err);
     }
   }
 
@@ -449,17 +413,15 @@ export default class MessengerHandler extends ChannelHandler<
 
     if (signatureHash !== expectedHash) {
       this.logger.warn(
-        "Messenger Channel Handler : Couldn't match the request signature.",
+        "Couldn't match the request signature.",
         signatureHash,
         expectedHash,
       );
-      return res
-        .status(500)
-        .json({ err: "Couldn't match the request signature." });
+      return res.status(500).json({
+        err: "Messenger Channel Handler : Couldn't match the request signature.",
+      });
     }
-    this.logger.debug(
-      'Messenger Channel Handler : Request signature has been validated.',
-    );
+    this.logger.debug('Request signature has been validated.');
     return next();
   }
 
@@ -474,11 +436,10 @@ export default class MessengerHandler extends ChannelHandler<
     const data: any = req.body;
 
     if (data.object !== 'page') {
-      this.logger.warn(
-        'Messenger Channel Handler : Missing `page` attribute!',
-        data,
-      );
-      return res.status(400).json({ err: 'The page parameter is missing!' });
+      this.logger.warn('Missing `page` attribute!', data);
+      return res.status(400).json({
+        err: 'Messenger Channel Handler :The page parameter is missing!',
+      });
     }
     return next();
   }
@@ -508,13 +469,11 @@ export default class MessengerHandler extends ChannelHandler<
       data['hub.mode'] === 'subscribe' &&
       data['hub.verify_token'] === verifyToken
     ) {
-      this.logger.log(
-        'Messenger Channel Handler : Subscription token has been verified successfully!',
-      );
+      this.logger.log('Subscription token has been verified successfully!');
       return res.status(200).send(data['hub.challenge']);
     } else {
       this.logger.error(
-        'Messenger Channel Handler : Failed validation. Make sure the validation tokens match.',
+        'Failed validation. Make sure the validation tokens match.',
       );
       return res.status(500).json({
         err: 'Messenger Channel Handler : Failed validation. Make sure the validation tokens match.',
@@ -540,14 +499,10 @@ export default class MessengerHandler extends ChannelHandler<
     return handler._verifySignature(req, res, () => {
       return handler._validateMessage(req, res, () => {
         const data = req.body;
-        this.logger.debug(
-          'Messenger Channel Handler : Webhook notification received.',
-        );
+        this.logger.debug('Webhook notification received.');
         // Check notification
         if (!('entry' in data)) {
-          this.logger.error(
-            'Messenger Channel Handler : Webhook received no entry data.',
-          );
+          this.logger.error('Webhook received no entry data.');
           return res.status(500).json({
             err: 'Messenger Channel Handler : Webhook received no entry data.',
           });
@@ -563,15 +518,12 @@ export default class MessengerHandler extends ChannelHandler<
               if (type) {
                 this.eventEmitter.emit(`hook:chatbot:${type}`, event);
               } else {
-                this.logger.error(
-                  'Messenger Channel Handler : Webhook received unknown event ',
-                  event,
-                );
+                this.logger.error('Webhook received unknown event ', event);
               }
             } catch (err) {
               // if any of the events produced an error, err would equal that error
               this.logger.error(
-                'Messenger Channel Handler : Something went wrong while handling events',
+                'Something went wrong while handling events',
                 err,
               );
             }
@@ -931,10 +883,7 @@ export default class MessengerHandler extends ChannelHandler<
         await handler.sendTypingIndicator(event.getSenderForeignId(), timeout);
         return await req();
       } catch (err) {
-        this.logger.error(
-          'Messenger Channel Handler : Failed in sendTypingIndicator ',
-          err,
-        );
+        this.logger.error('Failed in sendTypingIndicator ', err);
         throw err;
       }
     }
@@ -955,7 +904,7 @@ export default class MessengerHandler extends ChannelHandler<
     if (timeout > 20000) {
       timeout = 20000;
       this.logger.warn(
-        'Messenger Channel Handler : Typing Indicator max milliseconds value is 20000 (20 seconds)',
+        'Typing Indicator max milliseconds value is 20000 (20 seconds)',
       );
     }
 
@@ -1086,9 +1035,7 @@ export default class MessengerHandler extends ChannelHandler<
           labelId,
         );
       });
-    this.logger.debug(
-      'Messenger Channel Handler : Sync user labels with API ... ',
-    );
+    this.logger.debug('Sync user labels with API ... ');
 
     return await Promise.all([...deleted, ...added]);
   }
@@ -1112,10 +1059,7 @@ export default class MessengerHandler extends ChannelHandler<
               text,
             },
           ];
-    this.logger.debug(
-      'Messenger Channel Handler : Setting greeting text ...',
-      text,
-    );
+    this.logger.debug('Setting greeting text ...', text);
     return await this.api.profile.setMessengerProfile({
       greeting,
     });
@@ -1202,10 +1146,7 @@ export default class MessengerHandler extends ChannelHandler<
         });
       }
     } catch (err) {
-      this.logger.error(
-        'Messenger Channel Handler : Unable to update menu ...',
-        err,
-      );
+      this.logger.error('Unable to update menu ...', err);
     }
   }
 
