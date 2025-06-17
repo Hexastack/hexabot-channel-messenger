@@ -144,13 +144,13 @@ export default class MessengerHandler extends ChannelHandler<
   }
 
   /**
-   * Sync label(s) with Facebook.
+   * After creating a `Label`, this method updates the `label_id` field.
    *
-   * @param label
-   * @param callback
+   * @param {LabelDocument} created - The created label document instance.
+   *
    */
   @OnEvent('hook:label:preCreate')
-  async onLabelPreCreate(created: LabelDocument): Promise<void> {
+  async onLabelPreCreate(created: LabelDocument) {
     try {
       const { id } = await this.api.customLabels.createCustomLabel(
         created.name,
