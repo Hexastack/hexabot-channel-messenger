@@ -13,7 +13,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { NextFunction, Request, Response } from 'express';
-import { Document, Query } from 'mongoose';
 
 import { AttachmentService } from '@/attachment/services/attachment.service';
 import { AttachmentFile } from '@/attachment/types';
@@ -21,7 +20,6 @@ import { ChannelService } from '@/channel/channel.service';
 import ChannelHandler from '@/channel/lib/Handler';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
-import { Label } from '@/chat/schemas/label.schema';
 import { Subscriber } from '@/chat/schemas/subscriber.schema';
 import { AttachmentRef, FileType } from '@/chat/schemas/types/attachment';
 import { Button, ButtonType } from '@/chat/schemas/types/button';
@@ -50,7 +48,6 @@ import { LoggerService } from '@/logger/logger.service';
 import { Setting } from '@/setting/schemas/setting.schema';
 import { CheckboxSetting, TextareaSetting } from '@/setting/schemas/types';
 import { SettingService } from '@/setting/services/setting.service';
-import { DeleteResult } from '@/utils/generics/base-repository';
 import { BaseSchema } from '@/utils/generics/base-schema';
 import { TFilterQuery } from '@/utils/types/filter.types';
 
@@ -141,46 +138,6 @@ export default class MessengerHandler extends ChannelHandler<
       return files;
     }
     return [];
-  }
-
-  /**
-   * Sync label(s) with Facebook.
-   *
-   * @param labels
-   */
-  @OnEvent('hook:label:preDelete')
-  async onLabelPreDelete(
-    _query: Query<
-      DeleteResult,
-      Document<Label, any, any>,
-      unknown,
-      Label,
-      'deleteOne' | 'deleteMany'
-    >,
-    criteria: TFilterQuery<Label>,
-  ): Promise<void> {
-    if (criteria._id) {
-      const labels = await this.labelService.repository.model.find({
-        _id: criteria._id,
-      });
-
-      try {
-        await Promise.all(
-          labels
-            .filter((label) => {
-              return label.label_id && this.getName() in label.label_id;
-            })
-            .map((label) => {
-              return this.api.customLabels.deleteCustomLabel(
-                label.label_id![this.getName()],
-              );
-            }),
-        );
-        this.logger.debug('Successfully removed label(s)');
-      } catch (err) {
-        this.logger.error('Failed to remove label(s)', err);
-      }
-    }
   }
 
   /**
