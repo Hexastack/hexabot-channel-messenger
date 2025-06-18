@@ -21,7 +21,7 @@ import { ChannelService } from '@/channel/channel.service';
 import ChannelHandler from '@/channel/lib/Handler';
 import { SubscriberCreateDto } from '@/chat/dto/subscriber.dto';
 import { VIEW_MORE_PAYLOAD } from '@/chat/helpers/constants';
-import { Label, LabelDocument } from '@/chat/schemas/label.schema';
+import { Label } from '@/chat/schemas/label.schema';
 import { Subscriber } from '@/chat/schemas/subscriber.schema';
 import { AttachmentRef, FileType } from '@/chat/schemas/types/attachment';
 import { Button, ButtonType } from '@/chat/schemas/types/button';
@@ -141,37 +141,6 @@ export default class MessengerHandler extends ChannelHandler<
       return files;
     }
     return [];
-  }
-
-  /**
-   * After creating a `Label`, this method updates the `label_id` field.
-   *
-   * @param {LabelDocument} created - The created label document instance.
-   *
-   */
-  @OnEvent('hook:label:preCreate')
-  async onLabelPreCreate(created: LabelDocument) {
-    try {
-      const { id } = await this.api.customLabels.createCustomLabel(
-        created.name,
-      );
-
-      await this.labelService.repository.model.updateOne(
-        { _id: created._id },
-        {
-          $set: {
-            label_id: {
-              ...(created.label_id || {}),
-              ...{ [this.getName()]: id },
-            },
-          },
-        },
-      );
-
-      this.logger.debug('Successfully synced label');
-    } catch (err) {
-      this.logger.error('Failed to sync label', err);
-    }
   }
 
   /**
